@@ -1,0 +1,1 @@
+FROM quay.io/redhattraining/hello-world-nginx
