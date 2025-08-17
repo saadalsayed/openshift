@@ -4,23 +4,34 @@ name: Generate Release Notes on PR
 on:
   pull_request:
     types: [opened, closed]
-  # Optional: Also trigger manually
+  # Manual triggering with milestone ID
   workflow_dispatch:
     inputs:
       milestoneId:
-        description: 'Milestone ID'
+        description: 'Milestone ID (required - get from GitHub milestone URL)'
         required: true
         default: '1'
 
 jobs:
   create-release-notes:
     runs-on: ubuntu-latest
-    # Only run if PR is merged or closed
-    if: github.event.pull_request.merged == true || github.event.action == 'closed'
+    # Only run if PR is merged or manually triggered
+    if: (github.event.pull_request.merged == true) || (github.event_name == 'workflow_dispatch')
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        
+      - name: Get Milestone from PR (if available)
+        id: get_milestone
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -n "${{ github.event.pull_request.milestone.number }}" ]; then
+            echo "milestone_id=${{ github.event.pull_request.milestone.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "milestone_id=1" >> $GITHUB_OUTPUT
+            echo "Warning: No milestone found on PR, using default milestone ID 1"
+          fi
         
       - name: Create Release Notes
         uses: docker://decathlon/release-notes-generator-action:2.0.1
@@ -29,6 +40,8 @@ jobs:
           OUTPUT_FOLDER: release_notes
           USE_MILESTONE_TITLE: "true"
           FILENAME_PREFIX: Release
+          # Pass milestone ID for manual trigger or from PR
+          MILESTONE_ID: ${{ github.event.inputs.milestoneId || steps.get_milestone.outputs.milestone_id }}
           
       - name: Upload Release Notes as Artifact
         uses: actions/upload-artifact@v4
