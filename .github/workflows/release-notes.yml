@@ -330,46 +330,46 @@ jobs:
           # Create different system prompts based on trigger type
           if [[ "$TRIGGER_TYPE" == "pr" ]]; then
             cat > system_prompt.txt << 'EOF'
-            You are an expert code reviewer and technical writer analyzing a Pull Request.
+You are an expert code reviewer and technical writer analyzing a Pull Request.
 
-            Your task is to create a comprehensive PR summary that helps reviewers and team members understand the changes.
+Your task is to create a comprehensive PR summary that helps reviewers and team members understand the changes.
 
-            Guidelines for PR Analysis:
-            1. Summarize the main purpose and goals of the PR in 2-3 sentences
-            2. List key changes organized by category (Features, Fixes, Refactoring, etc.)
-            3. Identify potential areas of concern, risk, or complexity
-            4. Note any breaking changes or API modifications prominently
-            5. Mention testing implications or requirements
-            6. Highlight dependencies or related changes
-            7. Use clear, technical language appropriate for developers
-            8. Structure with clear sections: Summary, Key Changes, Impact & Risks, Review Notes
-            9. Keep it comprehensive but scannable
-            10. Include specific file areas affected if significant
+Guidelines for PR Analysis:
+1. Summarize the main purpose and goals of the PR in 2-3 sentences
+2. List key changes organized by category (Features, Fixes, Refactoring, etc.)
+3. Identify potential areas of concern, risk, or complexity
+4. Note any breaking changes or API modifications prominently
+5. Mention testing implications or requirements
+6. Highlight dependencies or related changes
+7. Use clear, technical language appropriate for developers
+8. Structure with clear sections: Summary, Key Changes, Impact & Risks, Review Notes
+9. Keep it comprehensive but scannable
+10. Include specific file areas affected if significant
 
-            Format the output in clean Markdown suitable for a GitHub PR comment.
-            Focus on what reviewers need to know to effectively review this PR.
-            EOF
+Format the output in clean Markdown suitable for a GitHub PR comment.
+Focus on what reviewers need to know to effectively review this PR.
+EOF
           else
             cat > system_prompt.txt << 'EOF'
-              You are an expert technical writer creating release notes for a software project.
+You are an expert technical writer creating release notes for a software project.
 
-              Your task is to analyze commits and pull requests to create professional, user-friendly release notes.
+Your task is to analyze commits and pull requests to create professional, user-friendly release notes.
 
-              Guidelines for Release Notes:
-              1. Group changes into logical categories: Features, Bug Fixes, Improvements, Dependencies, Documentation, Security, etc.
-              2. Use clear, user-focused language (avoid internal jargon)
-              3. Focus on user/developer impact, not implementation details
-              4. Include PR/issue numbers when available: (#123)
-              5. Use bullet points with consistent formatting
-              6. Highlight breaking changes prominently with ⚠️ 
-              7. Keep descriptions concise but informative
-              8. Use past tense (e.g., "Added", "Fixed", "Updated")
-              9. Order categories by importance: Features, Fixes, Improvements, etc.
-              10. If no significant changes, create brief maintenance release note
+Guidelines for Release Notes:
+1. Group changes into logical categories: Features, Bug Fixes, Improvements, Dependencies, Documentation, Security, etc.
+2. Use clear, user-focused language (avoid internal jargon)
+3. Focus on user/developer impact, not implementation details
+4. Include PR/issue numbers when available: (#123)
+5. Use bullet points with consistent formatting
+6. Highlight breaking changes prominently with ⚠️ 
+7. Keep descriptions concise but informative
+8. Use past tense (e.g., "Added", "Fixed", "Updated")
+9. Order categories by importance: Features, Fixes, Improvements, etc.
+10. If no significant changes, create brief maintenance release note
 
-              Format as clean Markdown with ## headers for categories.
-              Make it scan-friendly with consistent bullet formatting.
-              EOF
+Format as clean Markdown with ## headers for categories.
+Make it scan-friendly with consistent bullet formatting.
+EOF
           fi
           
           # Generate analysis using appropriate prompt
@@ -539,8 +539,7 @@ jobs:
           else
             echo "- **Type**: Release Notes Generation" >> $GITHUB_STEP_SUMMARY
             echo "- **Release**: ${{ steps.setup.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **Commits**: ${{ steps.commits.outputs.commit_count }}" >> $GITHUB_STEP_SUMMARY
-            echo "- **PRs**: ${{ steps.prs.outputs.pr_count }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **Commits Analyzed**: ${{ steps.commits.outputs.commit_count }}" >> $GITHUB_STEP_SUMMARY
             if [[ -n "${{ steps.handle_release.outputs.release_url }}" ]]; then
               echo "- **Release URL**: ${{ steps.handle_release.outputs.release_url }}" >> $GITHUB_STEP_SUMMARY
             fi
