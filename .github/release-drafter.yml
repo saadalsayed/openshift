@@ -1,0 +1,86 @@
+# .github/release-drafter.yml
+name-template: 'v$RESOLVED_VERSION 🎉'
+tag-template: 'v$RESOLVED_VERSION'
+
+categories:
+  - title: '🚀 Exciting New Features'
+    labels:
+      - 'feature'
+      - 'enhancement' 
+      - 'new'
+    collapse-after: 5
+    
+  - title: '🐛 Important Bug Fixes'
+    labels:
+      - 'fix'
+      - 'bugfix'
+      - 'bug'
+      - 'hotfix'
+    collapse-after: 5
+    
+  - title: '🔒 Security & Performance'
+    labels:
+      - 'security'
+      - 'performance'
+      - 'optimization'
+      
+  - title: '📚 Documentation & Developer Experience'
+    labels:
+      - 'documentation'
+      - 'docs'
+      - 'dx'
+      
+  - title: '🏗️ Infrastructure & Dependencies'
+    labels:
+      - 'dependencies'
+      - 'ci'
+      - 'build'
+      - 'infrastructure'
+
+exclude-labels:
+  - 'skip-changelog'
+  - 'duplicate'
+  - 'question'
+  - 'invalid'
+
+# Smart change formatting
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-title-escapes: '\<*_&'
+
+# Automatic version resolution
+version-resolver:
+  major:
+    labels:
+      - 'breaking'
+      - 'major'
+  minor:
+    labels:
+      - 'feature'
+      - 'enhancement'
+  patch:
+    labels:
+      - 'fix'
+      - 'bug'
+      - 'security'
+  default: patch
+
+# Professional template
+template: |
+  # 🎉 What's New in $RESOLVED_VERSION
+  
+  We're excited to share the latest improvements to make your experience even better!
+  
+  $CHANGES
+  
+  ## 👥 Amazing Contributors
+  
+  $CONTRIBUTORS
+  
+  ## 🚀 Get Started
+  
+  Ready to upgrade? [Download v$RESOLVED_VERSION now!]($RELEASE_URL)
+  
+  **Full Changelog**: $PREVIOUS_TAG...$RESOLVED_VERSION
+  
+  ---
+  *Automatically generated with ❤️*
