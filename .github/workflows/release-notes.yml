@@ -2,8 +2,11 @@ name: Generate Release Notes on PR
 
 # Trigger on pull request events
 on:
+  push:
+    branches:
+      - main        # or master
   pull_request:
-  # Manual triggering with milestone ID
+    types: [opened, reopened, synchronize, closed]
   workflow_dispatch:
     inputs:
       milestoneId:
