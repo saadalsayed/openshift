@@ -3,7 +3,6 @@ name: Generate Release Notes on PR
 # Trigger on pull request events
 on:
   pull_request:
-    types: [closed , reopened , synchronize, opened] 
   # Manual triggering with milestone ID
   workflow_dispatch:
     inputs:
