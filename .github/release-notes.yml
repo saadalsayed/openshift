@@ -1,0 +1,14 @@
+changelog:
+  sections:
+    - title: "🚀 New Features"
+      labels: ["enhancement", "feature", "new"]
+    - title: "🐛 Bug Fixes"
+      labels: ["bug", "fix", "bugfix"]
+    - title: "📚 Documentation"
+      labels: ["documentation", "docs"]
+    - title: "🔧 Maintenance"
+      labels: ["maintenance", "chore", "refactor"]
+    - title: "⚡ Performance"
+      labels: ["performance", "optimization"]
+    - title: "🔒 Security"
+      labels: ["security"]
