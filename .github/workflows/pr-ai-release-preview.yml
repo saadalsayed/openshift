@@ -25,7 +25,6 @@ jobs:
             const prNumber = context.payload.pull_request.number;
             
             try {
-              // Generate AI release notes
               const response = await github.rest.repos.generateReleaseNotes({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -34,15 +33,13 @@ jobs:
                 configuration_file_path: '.github/release.yml'
               });
               
-               const preview = `## 🤖 Release Notes Preview
+              const preview = `## 🤖 Release Notes Preview
 
-                ${response.data.body}
+${response.data.body}
 
 ---
-
 *Preview of how this PR will appear in release notes*`;
               
-              // Add comment to PR
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -51,5 +48,5 @@ jobs:
               });
               
             } catch (error) {
-              console.log('Preview generation failed:', error.message);
+              console.log('Preview failed:', error.message);
             }
