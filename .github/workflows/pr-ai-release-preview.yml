@@ -1,0 +1,55 @@
+name: PR Release Notes
+
+on:
+  pull_request:
+    types: [opened]
+    branches: [main, dev]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Generate preview
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            
+            try {
+              // Generate AI release notes
+              const response = await github.rest.repos.generateReleaseNotes({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag_name: `temp-${Date.now()}`,
+                target_commitish: context.payload.pull_request.head.sha,
+                configuration_file_path: '.github/release.yml'
+              });
+              
+               const preview = `## 🤖 Release Notes Preview
+
+                ${response.data.body}
+
+---
+
+*Preview of how this PR will appear in release notes*`;
+              
+              // Add comment to PR
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: preview
+              });
+              
+            } catch (error) {
+              console.log('Preview generation failed:', error.message);
+            }
