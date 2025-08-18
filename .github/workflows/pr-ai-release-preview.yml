@@ -17,36 +17,55 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Generate preview
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            
-            try {
-              const response = await github.rest.repos.generateReleaseNotes({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: `temp-${Date.now()}`,
-                target_commitish: context.payload.pull_request.head.sha,
-                configuration_file_path: '.github/release.yml'
-              });
-              
-              const preview = `## 🤖 Release Notes Preview
-
-${response.data.body}
-
----
-*Preview of how this PR will appear in release notes*`;
-              
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body: preview
-              });
-              
-            } catch (error) {
-              console.log('Preview failed:', error.message);
-            }
+      - name: Generate AI preview
+        id: generate
+        run: |
+          # Get latest release tag for comparison
+          LATEST_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          
+          # Generate release notes using GitHub CLI
+          TEMP_TAG="preview-${{ github.event.pull_request.number }}-$(date +%s)"
+          
+          # Create temporary tag
+          git tag "$TEMP_TAG" "${{ github.event.pull_request.head.sha }}"
+          
+          # Generate notes
+          if [ -n "$LATEST_TAG" ]; then
+            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="$TEMP_TAG" \
+              -f previous_tag_name="$LATEST_TAG" \
+              -f configuration_file_path=".github/release.yml" \
+              --jq '.body')
+          else
+            NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="$TEMP_TAG" \
+              -f configuration_file_path=".github/release.yml" \
+              --jq '.body')
+          fi
+          
+          # Clean up temp tag
+          git tag -d "$TEMP_TAG"
+          
+          # Save notes to file
+          echo "$NOTES" > /tmp/release_notes.md
+          
+          # Create preview comment
+          cat > /tmp/comment.md << 'EOF'
+          ## 🤖 Release Notes Preview
+          
+          EOF
+          cat /tmp/release_notes.md >> /tmp/comment.md
+          cat >> /tmp/comment.md << 'EOF'
+          
+          ---
+          *Preview of how this PR will appear in release notes*
+          EOF
+          
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Comment on PR
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/comment.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
