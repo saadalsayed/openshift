@@ -3,49 +3,65 @@ name: PR Release Notes
 on:
   pull_request:
     types: [opened]
-    branches: [main, dev]
+    branches: [main]
 
 jobs:
   preview:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # Ensures full history is available for git log
 
-      - name: Generate AI preview
+      - name: Generate PR-specific Release Notes Preview
         id: generate
         run: |
-          # Generate release notes using GitHub CLI without using tags.
-          # Here we use the PR's head commit SHA as a placeholder.
-          NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
-            -f tag_name="${{ github.event.pull_request.head.sha }}" \
-            -f configuration_file_path=".github/release.yml" \
-            --jq '.body')
+          echo "Generating release notes for PR #${{ github.event.pull_request.number }}..."
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          # Retrieve only the commits unique to this PR.
+          # The range "BASE_SHA..HEAD_SHA" selects commits reachable from HEAD but not from BASE.
+          # --no-merges excludes merge commits for clarity.
+          PR_COMMITS=$(git log "$BASE_SHA".."$HEAD_SHA" --no-merges --pretty=format:"* %s")
           
-          # Save notes to a file.
-          echo "$NOTES" > /tmp/release_notes.md
-          
-          # Create preview comment.
+          # Remove any " by @username" mentions for a cleaner output.
+          SUMMARIZED=$(echo "$PR_COMMITS" | sed -E 's/ by @[A-Za-z0-9_-]+//g')
+
+          # If no commits were found (e.g., due to squashing), insert a fallback message.
+          if [ -z "$SUMMARIZED" ]; then
+            SUMMARIZED="* No direct commits found in this Pull Request."
+          fi
+
+          # Save the summarized commits to a file.
+          echo "$SUMMARIZED" > /tmp/release_notes.md
+
+          # Create the comment file with a header.
           cat > /tmp/comment.md << 'EOF'
           ## 🤖 Release Notes Preview
-          
+
+          ## What's Changed
           EOF
           cat /tmp/release_notes.md >> /tmp/comment.md
           cat >> /tmp/comment.md << 'EOF'
-          
+
           ---
           *Preview of how this PR will appear in release notes*
           EOF
+
+          echo "Release notes preview generated successfully."
         env:
-           GH_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on PR
         run: |
+          echo "Commenting on PR #${{ github.event.pull_request.number }}..."
           gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/comment.md
+          echo "Comment added to PR."
         env:
-           GH_TOKEN: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
