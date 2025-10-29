@@ -1,3 +1,4 @@
+
 name: PR Release Notes
 
 on:
@@ -16,52 +17,45 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # Ensures full history is available for git log
+          fetch-depth: 0
 
-      - name: Generate PR-specific Release Notes Preview
+      - name: Generate AI preview
         id: generate
         run: |
-          echo "Generating release notes for PR #${{ github.event.pull_request.number }}..."
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-
-          # Retrieve only the commits unique to this PR.
-          # The range "BASE_SHA..HEAD_SHA" selects commits reachable from HEAD but not from BASE.
-          # --no-merges excludes merge commits for clarity.
-          PR_COMMITS=$(git log "$BASE_SHA".."$HEAD_SHA" --no-merges --pretty=format:"* %s")
+          # Generate release notes using the GitHub CLI based on the PR's head commit SHA.
+          NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="${{ github.event.pull_request.head.sha }}" \
+            --jq '.body')
           
-          # Remove any " by @username" mentions for a cleaner output.
-          SUMMARIZED=$(echo "$PR_COMMITS" | sed -E 's/ by @[A-Za-z0-9_-]+//g')
-
-          # If no commits were found (e.g., due to squashing), insert a fallback message.
-          if [ -z "$SUMMARIZED" ]; then
-            SUMMARIZED="* No direct commits found in this Pull Request."
-          fi
-
-          # Save the summarized commits to a file.
+          # Post-process the output:
+          # 1. Remove any substring that starts with " in " followed by an http(s) URL.
+          # 2. Remove any occurrence of " by @username".
+          # 3. Remove duplicate "## What's Changed" header lines.
+          SUMMARIZED=$(echo "$NOTES" | \
+            sed -E 's/[[:space:]]*in[[:space:]]+https?:\/\/[^ ]+//g' | \
+            sed -E 's/ by @[A-Za-z0-9_-]+//g' | \
+            grep -v "^## What's Changed")
+          
+          # Save the summarized notes to a file.
           echo "$SUMMARIZED" > /tmp/release_notes.md
-
-          # Create the comment file with a header.
+          
+          # Create the preview comment.
           cat > /tmp/comment.md << 'EOF'
           ## 🤖 Release Notes Preview
-
+          
           ## What's Changed
           EOF
           cat /tmp/release_notes.md >> /tmp/comment.md
           cat >> /tmp/comment.md << 'EOF'
-
+          
           ---
           *Preview of how this PR will appear in release notes*
           EOF
-
-          echo "Release notes preview generated successfully."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Comment on PR
         run: |
-          echo "Commenting on PR #${{ github.event.pull_request.number }}..."
           gh pr comment ${{ github.event.pull_request.number }} --body-file /tmp/comment.md
-          echo "Comment added to PR."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
